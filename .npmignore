@@ -1,0 +1,12 @@
+# Initally ignore all files
+*
+
+# Files to include
+!package.json
+!package-lock.json
+!LICENSE.txt
+!README.md
+
+# Files to include
+!api/**/*
+!index.js
