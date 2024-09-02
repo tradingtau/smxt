@@ -191,13 +191,13 @@ class Bybit extends Api {
             symbol: symbol,
             orderType: orderType === "limit" ? "Limit" : "Market",
             side: side === "buy" ? "Buy" : "Sell",
-            qty: amount,
+            qty: amount.toString(),
             timeInForce: "GTC",
             reduceOnly: reduceOnly,
             closeOnTrigger: reduceOnly
         }
         if (orderType === 'limit') {
-            params['price'] = price;
+            params['price'] = price.toString();
         }
         if (orderTag === '') {
             params['orderLinkId'] = (uuidv4().replaceAll("-", "")).substring(0, 36);
