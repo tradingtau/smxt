@@ -1,6 +1,6 @@
 {
   "name": "smxt",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "main": "index.js",
   "author": "tradingtau",
   "license": "MIT",
@@ -8,11 +8,9 @@
     "@noble/ed25519": "^2.1.0",
     "base58-js": "^2.0.0",
     "crypto-js": "^4.2.0",
-    "got": "^14.2.1",
-    "qs": "^6.12.1",
     "uuid": "^9.0.1"
   },
-  "homepage": "https://tradingtau.com",
+  "homepage": "https://github.com/tradingtau/smxt",
   "keywords": [
     "algorithmic",
     "algotrading",
