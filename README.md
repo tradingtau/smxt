@@ -48,6 +48,9 @@ console.log(smxt) // print all available exchanges
 - getPositionHistory(symbol, limit)
 - setLeverage(symbol, leverage)
 
+### For Detail
+[-> Manual](https://github.com/tradingtau/smxt/blob/main/api/api.js)
+
 ## Usage
 #### initialize
 ```JavaScript
