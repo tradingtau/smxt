@@ -45,6 +45,7 @@ console.log(smxt) // print all available exchanges
 - getPendingOrders(symbol)
 - getAllPendingOrders()
 - getTradeHistory(symbol, limit)
+- getPositionHistory(symbol, limit)
 - setLeverage(symbol, leverage)
 
 ## Usage
@@ -106,7 +107,13 @@ let orderType = "limit" // or market
 let side = "buy" // or sell
 let amount = 10
 let price = 0.4
-let orderId = await bybit.postOrder("XRPUSDT", orderType, side, amount, price)
+let orderId = await bybit.postOrder(
+    "XRPUSDT", 
+    orderType, 
+    side, 
+    amount, 
+    price
+)
 console.log(orderId) 
 
 let position = await bybit.getPosition("XRPUSDT")
