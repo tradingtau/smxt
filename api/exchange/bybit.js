@@ -70,6 +70,7 @@ class Bybit extends Api {
                 'amountTick': parseFloat(item['lotSizeFilter']['qtyStep']),
                 'priceTick': parseFloat(item['priceFilter']['tickSize']),
                 'minValue': parseFloat(item['lotSizeFilter']['minOrderQty']),
+                'maxOrderSize': parseFloat(item['lotSizeFilter']['maxMktOrderQty']),
                 'contractValue': 1
             }
         }
