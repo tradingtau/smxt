@@ -65,10 +65,11 @@ class Okx extends Api {
         let info = data['data'];
         for (const item of info) {
             this.symbolInfo[item['instId']] = {
-                'amountTick': item['minSz'],
-                'priceTick': item['tickSz'],
-                'minValue': item['lotSz'],
-                'contractValue': item['ctVal']
+                'amountTick': parseFloat(item['minSz']),
+                'priceTick': parseFloat(item['tickSz']),
+                'minValue': parseFloat(item['lotSz']),
+                'maxOrderSize': parseFloat(item['maxMktSz']),
+                'contractValue': parseFloat(item['ctVal'])
             }
         }
         return this.symbolInfo;
