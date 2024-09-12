@@ -10,8 +10,8 @@ class Api {
          * @returns {map} symbol info
          * @example
          * {
-         *   BTCUSDT: { amountTick: 0.1, priceTick: 0.001, minValue: 10 },
-         *   ETHUSDT: { amountTick: 1, priceTick: 0.0001, minValue: 10 }
+         *   BTCUSDT: { amountTick: 0.1, priceTick: 0.001, minValue: 10, maxOrderSize: 100 },
+         *   ETHUSDT: { amountTick: 1, priceTick: 0.0001, minValue: 10, maxOrderSize: 10000 }
          * }
          */
         throw new Error("Method 'initSymbolInfo()' must be implemented.");

@@ -36,3 +36,4 @@ __pycache__
 *.pyc
 bin/
 obj/
+test.js

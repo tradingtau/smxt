@@ -7,8 +7,9 @@ We aim to easily link multiple exchanges with one strategy code.
 ---
 
 ## Exchange currently supported
-- Bybit Futures
+- Bybit Futures (Unified, cross, one-way mode)
 - Okx Futures
+- Gate.io Futures
 
 ---
 
@@ -77,8 +78,8 @@ console.log(symbolBalance) // 700.0
 await bybit.initSymbolInfo()
 console.log(bybit.symbolInfo)
 // {
-//    BTCUSDT: { amountTick: 0.001, priceTick: 0.1, minValue: 0.001}
-//    ETHUSDT: { amountTick: 1, priceTick: 0.0001, minValue: 1}
+//    BTCUSDT: { amountTick: 0.001, priceTick: 0.1, minValue: 0.001, maxOrderSize: 100}
+//    ETHUSDT: { amountTick: 1, priceTick: 0.0001, minValue: 1, maxOrderSize: 10000}
 // }
 
 let timeframe = "1d" // or 4h, 1h, 30m, 15m, 5m, 1m

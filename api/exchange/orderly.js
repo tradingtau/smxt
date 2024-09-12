@@ -353,7 +353,7 @@ class Orderly extends Api {
             })
         }
         newKline.sort(function (first, second) {
-            return second.date - first.date;
+            return second.timestamp - first.timestamp;
         });
         return newKline;
     }
