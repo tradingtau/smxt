@@ -60,6 +60,10 @@ class Orderly extends Api {
         return data['data']['total_collateral_value'];
     }
 
+    async getTotalEquity() {
+        return await this.getSymbolBalance()
+    }
+
     async getPrice(symbol) {
         const result = await this.#signAndRequest(
             `${this.#baseUrl}/v1/public/market_trades?symbol=${symbol}&limit=1`,
