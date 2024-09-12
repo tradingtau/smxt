@@ -1,6 +1,6 @@
 {
   "name": "smxt",
-  "version": "1.0.10",
+  "version": "1.0.14",
   "main": "index.js",
   "author": "tradingtau",
   "license": "MIT",
@@ -41,6 +41,7 @@
     "exchange",
     "exchanges",
     "framework",
+    "gateio",
     "invest",
     "investing",
     "investor",
@@ -51,6 +52,7 @@
     "markets",
     "ohlcv",
     "order",
+    "orderly",
     "orderbook",
     "order book",
     "okx",

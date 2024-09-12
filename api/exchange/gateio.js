@@ -441,7 +441,6 @@ class GateIo extends Api {
             ...(requestInit.headers || {})
         };
 
-        // 요청 실행
         return fetch(input, {
             ...requestInit,
             headers,

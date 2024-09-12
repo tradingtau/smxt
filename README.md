@@ -7,9 +7,13 @@ We aim to easily link multiple exchanges with one strategy code.
 ---
 
 ## Exchange currently supported
+### CEX
 - Bybit Futures (Unified, cross, one-way mode)
 - Okx Futures
 - Gate.io Futures
+
+### DEX
+- Orderly Futrues
 
 ---
 
@@ -61,6 +65,22 @@ let bybit = new smxt.Bybit(
     apiKey = "YOUR_API_KEY", 
     apiSecret = "YOUR_API_SECERT"
 )
+
+let okx = new smxt.Okx(
+    apiKey = "YOUR_API_KEY",
+    apiSecret = "YOUR_API_SECERT",
+    passphrase = "YOUR_PASSPHRASE"
+)
+
+let gateIo = new smxt.GateIo(
+    apiKey = "YOUR_API_KEY",
+    apiSecret = "YOUR_API_SECERT"
+)
+
+let orderly = new smxt.Orderly(
+    accountId = "YOUR_ACCOUNT_ID",
+    apiSecret = "YOUR_API_SECERT"
+)
 ```
 
 #### get wallet data
@@ -78,8 +98,8 @@ console.log(symbolBalance) // 700.0
 await bybit.initSymbolInfo()
 console.log(bybit.symbolInfo)
 // {
-//    BTCUSDT: { amountTick: 0.001, priceTick: 0.1, minValue: 0.001, maxOrderSize: 100}
-//    ETHUSDT: { amountTick: 1, priceTick: 0.0001, minValue: 1, maxOrderSize: 10000}
+//    BTCUSDT: { amountTick: 0.001, priceTick: 0.1, minValue: 0.001, maxOrderSize: 100, contractValue: 1}
+//    ETHUSDT: { amountTick: 1, priceTick: 0.0001, minValue: 1, maxOrderSize: 10000, contractValue: 1}
 // }
 
 let timeframe = "1d" // or 4h, 1h, 30m, 15m, 5m, 1m

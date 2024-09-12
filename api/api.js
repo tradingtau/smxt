@@ -10,8 +10,8 @@ class Api {
          * @returns {map} symbol info
          * @example
          * {
-         *   BTCUSDT: { amountTick: 0.1, priceTick: 0.001, minValue: 10, maxOrderSize: 100 },
-         *   ETHUSDT: { amountTick: 1, priceTick: 0.0001, minValue: 10, maxOrderSize: 10000 }
+         *   BTCUSDT: { amountTick: 0.1, priceTick: 0.001, minValue: 10, maxOrderSize: 100, contractValue: 1 },
+         *   ETHUSDT: { amountTick: 1, priceTick: 0.0001, minValue: 10, maxOrderSize: 10000, contractValue: 1 }
          * }
          */
         throw new Error("Method 'initSymbolInfo()' must be implemented.");
@@ -248,7 +248,7 @@ class Api {
          * @description get orderbook of symbol
          * @param {string} symbol symbol
          * @param {number} limit asks, bids limit number
-         * @returns {map} asks, bids map. First data of bids, asks is close to middle point
+         * @returns {map} asks, bids map. First data of bids, asks is close to middle price
          * @example
          * {
          *   asks: [
