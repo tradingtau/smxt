@@ -483,7 +483,7 @@ class Bybit extends Api {
                 'X-BAPI-API-KEY': this.#apiKey,
                 'X-BAPI-TIMESTAMP': timestamp,
                 'X-BAPI-RECV-WINDOW': this.#recvWindow,
-                'X-Referer': Base64.decode('UmYwMDA1ODA='),
+                'X-Referer': Base64.decode('TWcwMDA1OTI='),
                 ...(requestInit?.headers ?? {})
             },
             ...(requestInit ?? {})
