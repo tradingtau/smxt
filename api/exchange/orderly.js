@@ -29,7 +29,6 @@ class Orderly extends Api {
         }
         let info = data['data']['rows'];
         for (const item of info) {
-            console.log(item)
             this.symbolInfo[item['symbol']] = {
                 'amountTick': item['base_tick'],
                 'priceTick': item['quote_tick'],
@@ -119,7 +118,6 @@ class Orderly extends Api {
         const positions = data['data']['rows'];
         let curPositions = {}
         for (const item of positions) {
-            console.log(item)
             curPositions[item['symbol']] = {
                 'amount': item['position_qty'],
                 'averageEntryPrice': item['average_open_price'],
