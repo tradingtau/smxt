@@ -9,6 +9,7 @@ We aim to easily link multiple exchanges with one strategy code.
 ## Exchange currently supported
 ### CEX
 - Binance Futures
+- Bitget Futures
 - Bybit Futures (Unified, cross, one-way mode)
 - Okx Futures
 - Gate.io Futures
@@ -66,6 +67,12 @@ var smxt = require('smxt')
 let binance = new smxt.Binance(
     apiKey = "YOUR_API_KEY",
     apiSecret = "YOUR_API_SECERT"
+)
+
+let bitget = new smxt.Bitget(
+    apiKey = "YOUR_API_KEY",
+    apiSecret = "YOUR_API_SECERT",
+    passphrase = "YOUR_PASSPHRASE"
 )
 
 let bybit = new smxt.Bybit(
