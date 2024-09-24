@@ -3,20 +3,22 @@ const {createHmac} = require('crypto');
 const {v4: uuidv4} = require('uuid');
 
 /**
- * @class Binance
+ * @class Bitget
  */
-class Binance extends Api {
+class Bitget extends Api {
     #baseUrl
     #apiKey
     #apiSecret
     #recvWindow
+    #passphrase
 
-    constructor(apiKey, apiSecret) {
+    constructor(apiKey, apiSecret, passphrase) {
         super();
-        this.#baseUrl = 'https://fapi.binance.com'
+        this.#baseUrl = 'https://api.bitget.com'
         this.#apiKey = apiKey
         this.#apiSecret = apiSecret
         this.#recvWindow = "5000"
+        this.#passphrase = passphrase
         this.symbolInfo = {}
     }
 
@@ -24,7 +26,7 @@ class Binance extends Api {
 
     async initSymbolInfo() {
         const result = await this.#signAndRequest(
-            `${this.#baseUrl}/fapi/v1/exchangeInfo`,
+            `${this.#baseUrl}/api/v2/mix/market/contracts?productType=usdt-futures`,
             {
                 method: 'GET',
             }
@@ -34,31 +36,17 @@ class Binance extends Api {
             throw new Error(errMsg);
         }
         const data = await result.json();
-        let info = data['symbols'];
+        if (data['code'] !== "00000") {
+            throw new Error(data['msg']);
+        }
+        let info = data['data'];
         for (const item of info) {
-            let amountTick = 0.0
-            let priceTick = 0.0
-            let minValue = 0.0
-            let maxOrderSize = 0.0
-            for (const filter of item['filters']) {
-                if (filter['filterType'] === 'LOT_SIZE') {
-                    amountTick = parseFloat(filter['stepSize'])
-                }
-                if (filter['filterType'] === 'PRICE_FILTER') {
-                    priceTick = parseFloat(filter['tickSize'])
-                }
-                if (filter['filterType'] === 'MIN_NOTIONAL') {
-                    minValue = parseFloat(filter['notional'])
-                }
-                if (filter['filterType'] === 'MARKET_LOT_SIZE') {
-                    maxOrderSize = parseFloat(filter['maxQty'])
-                }
-            }
+            let pricePlace = parseInt(item['pricePlace'])
             this.symbolInfo[item['symbol']] = {
-                'amountTick': amountTick,
-                'priceTick': priceTick,
-                'minValue': minValue,
-                'maxOrderSize': maxOrderSize,
+                'amountTick': parseFloat(item['sizeMultiplier']),
+                'priceTick': parseFloat(parseFloat(10 ** -pricePlace).toFixed(pricePlace)),
+                'minValue': parseFloat(item['minTradeUSDT']),
+                'maxOrderSize': parseFloat(item['maxPositionNum']),
                 'contractValue': 1.0
             }
         }
@@ -72,7 +60,7 @@ class Binance extends Api {
 
     async getSymbolBalance(symbol="USDT") {
         const result = await this.#signAndRequest(
-            `${this.#baseUrl}/fapi/v3/account`,
+            `${this.#baseUrl}/api/v2/mix/account/accounts?productType=USDT-FUTURES`,
             {
                 method: 'GET',
             }
@@ -82,32 +70,25 @@ class Binance extends Api {
             throw new Error(errMsg);
         }
         const data = await result.json();
-        for (let item of data['assets']) {
-            if (item['asset'] === symbol) {
-                return parseFloat(item['walletBalance'])
+        if (data['code'] !== "00000") {
+            throw new Error(data['msg']);
+        }
+        for (let item of data['data']) {
+            if (item['marginCoin'] === symbol) {
+                return parseFloat(item['usdtEquity'])
             }
         }
         return 0.0;
     }
 
     async getTotalEquity() {
-        const result = await this.#signAndRequest(
-            `${this.#baseUrl}/fapi/v3/account`,
-            {
-                method: 'GET',
-            }
-        )
-        if(result.status !== 200) {
-            const errMsg = await result.text()
-            throw new Error(errMsg);
-        }
-        const data = await result.json();
-        return parseFloat(data['totalWalletBalance'])
+        const result = await this.getSymbolBalance("USDT")
+        return result
     }
 
     async getPrice(symbol) {
         const result = await this.#signAndRequest(
-            `${this.#baseUrl}/fapi/v1/trades?symbol=${symbol}&limit=1`,
+            `${this.#baseUrl}/api/v2/mix/market/fills?productType=USDT-FUTURES&symbol=${symbol}&limit=1`,
             {
                 method: 'GET',
             }
@@ -117,12 +98,15 @@ class Binance extends Api {
             throw new Error(errMsg);
         }
         const data = await result.json();
-        return parseFloat(data[0]['price']);
+        if (data['code'] !== "00000") {
+            throw new Error(data['msg']);
+        }
+        return parseFloat(data['data'][0]['price']);
     }
 
     async getPosition(symbol) {
         const result = await this.#signAndRequest(
-            `${this.#baseUrl}/fapi/v3/positionRisk?symbol=${symbol}`,
+            `${this.#baseUrl}/api/v2/mix/position/single-position?productType=USDT-FUTURES&symbol=${symbol}&marginCoin=USDT`,
             {
                 method: 'GET',
             }
@@ -132,16 +116,20 @@ class Binance extends Api {
             throw new Error(errMsg);
         }
         const data = await result.json();
+        if (data['code'] !== "00000") {
+            throw new Error(data['msg']);
+        }
         let curPosition = {
             'amount': 0, 'averageEntryPrice': 0, 'unrealisedPnl': 0
         }
-        for (const item of data) {
-            if (item["positionAmt"] === "0") {
-                continue
+        for (const item of data['data']) {
+            let amount = parseFloat(item['total'])
+            if (item['holdSide'] === 'short' && amount > 0) {
+                amount *= -1
             }
-            curPosition["amount"] += parseFloat(item['positionAmt'])
-            curPosition["averageEntryPrice"] = parseFloat(item['entryPrice'])
-            let unrealisedPnl = item['unRealizedProfit']
+            curPosition["amount"] = amount
+            curPosition["averageEntryPrice"] = parseFloat(item['openPriceAvg'])
+            let unrealisedPnl = item['unrealizedPL']
             if (unrealisedPnl === '') {
                 unrealisedPnl = 0
             }
@@ -152,7 +140,7 @@ class Binance extends Api {
 
     async getAllPositions() {
         const result = await this.#signAndRequest(
-            `${this.#baseUrl}/fapi/v3/positionRisk`,
+            `${this.#baseUrl}/api/v2/mix/position/all-position?productType=USDT-FUTURES&marginCoin=USDT`,
             {
                 method: 'GET',
             }
@@ -161,18 +149,25 @@ class Binance extends Api {
             const errMsg = await result.text()
             throw new Error(errMsg);
         }
-        const positions = await result.json();
+        const data = await result.json();
+        if (data['code'] !== "00000") {
+            throw new Error(data['msg']);
+        }
         let curPositions = {}
-        for (const item of positions) {
+        for (const item of data['data']) {
             let curPosition = {
                 'amount': 0, 'averageEntryPrice': 0, 'unrealisedPnl': 0
             }
             if (item["positionAmt"] === "0") {
                 continue
             }
-            curPosition["amount"] += parseFloat(item['positionAmt'])
-            curPosition["averageEntryPrice"] = parseFloat(item['entryPrice'])
-            let unrealisedPnl = item['unRealizedProfit']
+            let amount = parseFloat(item['total'])
+            if (item['holdSide'] === 'short' && amount > 0) {
+                amount *= -1
+            }
+            curPosition["amount"]  = amount
+            curPosition["averageEntryPrice"] = parseFloat(item['openPriceAvg'])
+            let unrealisedPnl = item['unrealizedPL']
             if (unrealisedPnl === '') {
                 unrealisedPnl = 0
             }
@@ -185,22 +180,23 @@ class Binance extends Api {
     async postOrder(symbol, orderType, side, amount, price, reduceOnly = false, orderTag = '') {
         let params = {
             symbol: symbol,
-            type: orderType === "limit" ? "LIMIT" : "MARKET",
-            side: side === "buy" ? "BUY" : "SELL",
-            quantity: amount.toString(),
-            reduceOnly: reduceOnly,
+            productType: 'USDT-FUTURES',
+            marginMode : 'crossed',
+            marginCoin: 'USDT',
+            orderType: orderType,
+            side: side,
+            size: amount.toString(),
+            reduceOnly: reduceOnly ? 'YES' : 'NO',
         }
         if (orderType === 'limit') {
             params['price'] = price.toString();
-            params['timeInForce'] = "GTC";
         }
-        if (orderTag === '') {
-            params['newClientOrderId'] = (Base64.decode("eC15UVZkUDZqTg==") + uuidv4().replaceAll("-", "")).substring(0, 36);
-        }
+        console.log(new URLSearchParams(params).toString())
         const result = await this.#signAndRequest(
-            `${this.#baseUrl}/fapi/v1/order?` + new URLSearchParams(params).toString(),
+            `${this.#baseUrl}/api/v2/mix/order/place-order`,
             {
                 method: 'POST',
+                body: JSON.stringify(params)
             }
         )
         if(result.status !== 200) {
@@ -208,29 +204,32 @@ class Binance extends Api {
             throw new Error(errMsg);
         }
         const data = await result.json();
-        return data['orderId']
+        if (data['code'] !== "00000") {
+            throw new Error(data['msg']);
+        }
+        return data['data']['orderId']
     }
 
     async cancelOrder(symbol, orderId) {
         const params = {
             symbol: symbol,
+            productType: 'USDT-FUTURES',
             orderId: orderId,
         }
         const result = await this.#signAndRequest(
-            `${this.#baseUrl}/fapi/v1/order?` + new URLSearchParams(params).toString(),
+            `${this.#baseUrl}/api/v2/mix/order/cancel-order`,
             {
-                method: 'DELETE',
+                method: 'POST',
+                body: JSON.stringify(params)
             }
         )
-        const data = await result.json();
         if(result.status !== 200) {
-            let errMsg = ''
-            try{
-                errMsg = await result.text()
-            } catch (e) {
-                errMsg = data.msg;
-            }
+            const errMsg = await result.text()
             throw new Error(errMsg);
+        }
+        const data = await result.json();
+        if (data['code'] !== "00000") {
+            throw new Error(data['msg']);
         }
         return true;
     }
@@ -238,29 +237,29 @@ class Binance extends Api {
     async cancelAllOrders(symbol) {
         const params = {
             symbol: symbol,
+            productType: 'USDT-FUTURES',
         }
         const result = await this.#signAndRequest(
-            `${this.#baseUrl}/fapi/v1/allOpenOrders?` + new URLSearchParams(params).toString(),
+            `${this.#baseUrl}/api/v2/mix/order/cancel-all-orders`,
             {
-                method: 'DELETE',
+                method: 'POST',
+                body: JSON.stringify(params)
             }
         )
-        const data = await result.json();
         if(result.status !== 200) {
-            let errMsg = ''
-            try{
-                errMsg = await result.text()
-            } catch (e) {
-                errMsg = data.msg;
-            }
+            const errMsg = await result.text()
             throw new Error(errMsg);
+        }
+        const data = await result.json();
+        if (data['code'] !== "00000") {
+            throw new Error(data['msg']);
         }
         return true;
     }
 
     async getPendingOrders(symbol) {
         const result = await this.#signAndRequest(
-            `${this.#baseUrl}/fapi/v1/openOrders?symbol=${symbol}`,
+            `${this.#baseUrl}/api/v2/mix/order/orders-pending?symbol=${symbol}&productType=USDT-FUTURES`,
             {
                 method: 'GET',
             }
@@ -270,17 +269,20 @@ class Binance extends Api {
             throw new Error(errMsg);
         }
         const data = await result.json();
+        if (data['code'] !== "00000") {
+            throw new Error(data['msg']);
+        }
         let pendingOrders = []
-        for (const item of data) {
-            let amount = parseFloat(item['origQty'])
-            if (item['side'] === 'SELL' && amount > 0) {
+        for (const item of data['data']['entrustedList']) {
+            let amount = parseFloat(item['size'])
+            if (item['side'] === 'sell' && amount > 0) {
                 amount *= -1
             }
             pendingOrders.push({
                 'orderId': item['orderId'],
                 'price': parseFloat(item['price']),
                 'amount': amount,
-                'createdTime': item['updateTime']
+                'createdTime': item['uTime']
             })
         }
         return pendingOrders
@@ -288,7 +290,7 @@ class Binance extends Api {
 
     async getAllPendingOrders() {
         const result = await this.#signAndRequest(
-            `${this.#baseUrl}/fapi/v1/openOrders`,
+            `${this.#baseUrl}/api/v2/mix/order/orders-pending?productType=USDT-FUTURES`,
             {
                 method: 'GET',
             }
@@ -298,10 +300,13 @@ class Binance extends Api {
             throw new Error(errMsg);
         }
         const data = await result.json();
+        if (data['code'] !== "00000") {
+            throw new Error(data['msg']);
+        }
         let pendingOrders = []
-        for (const item of data) {
-            let amount = parseFloat(item['origQty'])
-            if (item['side'] === 'SELL' && amount > 0) {
+        for (const item of data['data']['entrustedList']) {
+            let amount = parseFloat(item['size'])
+            if (item['side'] === 'sell' && amount > 0) {
                 amount *= -1
             }
             pendingOrders.push({
@@ -309,14 +314,14 @@ class Binance extends Api {
                 'symbol': item['symbol'],
                 'price': parseFloat(item['price']),
                 'amount': amount,
-                'createdTime': item['updateTime']
+                'createdTime': item['uTime']
             })
         }
         return pendingOrders
     }
 
-    async getTradeHistory(symbol, limit = 500) {
-        let url = `${this.#baseUrl}/fapi/v1/allOrders?symbol=${symbol}&limit=${limit}`
+    async getTradeHistory(symbol, limit = 100) {
+        let url = `${this.#baseUrl}/api/v2/mix/order/fills?symbol=${symbol}&limit=${limit}&productType=USDT-FUTURES`
         const result = await this.#signAndRequest(
             url,
             {
@@ -328,20 +333,20 @@ class Binance extends Api {
             throw new Error(errMsg);
         }
         const data = await result.json();
+        if (data['code'] !== "00000") {
+            throw new Error(data['msg']);
+        }
         let historyList = []
-        for (const item of data) {
-            let amount = parseFloat(item['executedQty'])
-            if (item['side'] === 'SELL' && amount > 0) {
+        for (const item of data['data']['fillList']) {
+            let amount = parseFloat(item['baseVolume'])
+            if (item['side'] === 'sell' && amount > 0) {
                 amount *= -1
-            }
-            if (item['status'] !== "FILLED") {
-                continue
             }
             let historyItem = {
                 'ordId': item['orderId'],
-                'price': parseFloat(item['avgPrice']),
+                'price': parseFloat(item['price']),
                 'amount': amount,
-                'executed_time': item['updateTime'],
+                'executed_time': item['cTime'],
             }
             historyList.push(historyItem)
         }
@@ -349,7 +354,7 @@ class Binance extends Api {
     }
 
     async getPositionHistory(symbol, limit = 100) {
-        let url = `${this.#baseUrl}/fapi/v1/userTrades?symbol=${symbol}&limit=${limit}`
+        let url = `${this.#baseUrl}/api/v2/mix/order/fills?symbol=${symbol}&limit=${limit}&productType=USDT-FUTURES`
         const result = await this.#signAndRequest(
             url,
             {
@@ -361,19 +366,22 @@ class Binance extends Api {
             throw new Error(errMsg);
         }
         const data = await result.json();
+        if (data['code'] !== "00000") {
+            throw new Error(data['msg']);
+        }
         let historyList = []
-        for (const item of data) {
-            let amount = parseFloat(item['qty'])
-            if (item['side'] === 'SELL' && amount > 0) {
+        for (const item of data['data']['fillList']) {
+            let amount = parseFloat(item['baseVolume'])
+            if (item['side'] === 'sell' && amount > 0) {
                 amount *= -1
             }
             let historyItem =
                 {
                     'id': item['orderId'],
                     'price': parseFloat(item['price']),
-                    'pnl': parseFloat(item['realizedPnl']),
+                    'pnl': parseFloat(item['profit']),
                     'amount': amount,
-                    'executed_time': item['time'],
+                    'executed_time': item['cTime'],
                 }
             historyList.push(historyItem)
         }
@@ -381,9 +389,9 @@ class Binance extends Api {
     }
 
 
-    async getOrderBook(symbol, limit = 20) {
+    async getOrderBook(symbol, limit = 15) {
         const result = await this.#signAndRequest(
-            `${this.#baseUrl}/fapi/v1/depth?symbol=${symbol}&limit=${limit}`,
+            `${this.#baseUrl}/api/v2/mix/market/merge-depth?symbol=${symbol}&limit=${limit}&productType=USDT-FUTURES`,
             {
                 method: 'GET',
             }
@@ -393,8 +401,11 @@ class Binance extends Api {
             throw new Error(errMsg);
         }
         const data = await result.json();
-        const asks = data['asks'];
-        const bids = data['bids'];
+        if (data['code'] !== "00000") {
+            throw new Error(data['msg']);
+        }
+        const asks = data['data']['asks'];
+        const bids = data['data']['bids'];
 
         let newAsks = [];
         let newBids = [];
@@ -419,8 +430,15 @@ class Binance extends Api {
 
     // getKline of okx retrieve only complete candle
     async getKline(symbol, timeframe, limit = 100) {
+        if (timeframe === "1d") {
+            timeframe = "1Dutc"
+        } else if (timeframe === "6h" || timeframe === "12h") {
+            timeframe = timeframe.replaceAll("h", "Hutc")
+        } else {
+            timeframe = timeframe.replaceAll("h", "H")
+        }
         const result = await this.#signAndRequest(
-            `${this.#baseUrl}/fapi/v1/klines?symbol=${symbol}&interval=${timeframe}&limit=${limit}`,
+            `${this.#baseUrl}/api/v2/mix/market/candles?symbol=${symbol}&granularity=${timeframe}&limit=${limit}&productType=USDT-FUTURES`,
             {
                 method: 'GET',
             }
@@ -430,8 +448,11 @@ class Binance extends Api {
             throw new Error(errMsg);
         }
         const data = await result.json();
+        if (data['code'] !== "00000") {
+            throw new Error(data['msg']);
+        }
         let newKline = [];
-        for (const kline of data) {
+        for (const kline of data['data']) {
             newKline.push({
                 "open": parseFloat(kline[1]),
                 "high": parseFloat(kline[2]),
@@ -448,10 +469,17 @@ class Binance extends Api {
     }
 
     async setLeverage(symbol, leverage) {
+        const params = {
+            symbol: symbol,
+            leverage: leverage,
+            productType: 'USDT-FUTURES',
+            marginCoin: 'USDT',
+        }
         const result = await this.#signAndRequest(
-            `${this.#baseUrl}/fapi/v1/leverage?symbol=${symbol}&leverage=${leverage}`,
+            `${this.#baseUrl}/api/v2/mix/account/set-leverage`,
             {
                 method: 'POST',
+                body: JSON.stringify(params)
             }
         )
         if(result.status !== 200) {
@@ -459,6 +487,9 @@ class Binance extends Api {
             throw new Error(errMsg);
         }
         const data = await result.json();
+        if (data['code'] !== "00000") {
+            throw new Error(data['msg']);
+        }
         return true;
     }
 
@@ -469,15 +500,14 @@ class Binance extends Api {
     }
 
     async #signAndRequest(input, requestInit) {
-        input += (input.includes("?") ? "&" : "?") + "timestamp=" + Date.now()
         const url = new URL(input);
-        const params = new URLSearchParams(url.search);
-        let message = `${params.toString()}`;
+        const timestamp = Math.round(new Date())
+        let message = `${timestamp}${requestInit?.method ?? 'GET'}${url.pathname}${url.search}`;
         if (requestInit?.body) {
             message += requestInit.body;
         }
-        const signature = createHmac('sha256', this.#apiSecret).update(message).digest('hex')
-        input += "&signature=" + signature;
+        console.log(message)
+        const signature = createHmac('sha256', this.#apiSecret).update(message).digest('base64')
 
         return fetch(input, {
             headers: {
@@ -485,7 +515,11 @@ class Binance extends Api {
                     requestInit?.method !== 'GET' && requestInit?.method !== 'DELETE'
                         ? 'application/json'
                         : 'application/x-www-form-urlencoded',
-                'X-MBX-APIKEY': this.#apiKey,
+                'ACCESS-KEY': this.#apiKey,
+                'ACCESS-PASSPHRASE': this.#passphrase,
+                'ACCESS-SIGN': signature,
+                'ACCESS-TIMESTAMP': timestamp,
+                'X-CHANNEL-API-CODE': Base64.decode('MWpidHo='),
                 ...(requestInit?.headers ?? {})
             },
             ...(requestInit ?? {})
@@ -497,5 +531,5 @@ let Base64 = {_keyStr:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz01234
 
 
 module.exports = {
-    Binance
+    Bitget
 };
