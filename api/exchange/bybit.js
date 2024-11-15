@@ -109,10 +109,13 @@ class Bybit extends Api {
             'amount': 0, 'averageEntryPrice': 0, 'unrealisedPnl': 0
         }
         for (const item of positions) {
-            if (item["pos"] === "0") {
+            if (item["size"] === "0") {
                 continue
             }
             curPosition["amount"] += parseFloat(item['size'])
+            if (item["side"] === "Sell") {
+                curPosition["amount"] *= -1
+            }
             curPosition["averageEntryPrice"] = parseFloat(item['avgPrice'])
             let unrealisedPnl = item['unrealisedPnl']
             if (unrealisedPnl === '') {
@@ -140,10 +143,13 @@ class Bybit extends Api {
             let curPosition = {
                 'amount': 0, 'averageEntryPrice': 0, 'unrealisedPnl': 0
             }
-            if (item["pos"] === "0") {
+            if (item["size"] === "0") {
                 continue
             }
             curPosition["amount"] += parseFloat(item['size'])
+            if (item["side"] === "Sell") {
+                curPosition["amount"] *= -1
+            }
             curPosition["averageEntryPrice"] = parseFloat(item['avgPrice'])
             let unrealisedPnl = item['unrealisedPnl']
             if (unrealisedPnl === '') {
