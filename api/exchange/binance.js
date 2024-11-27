@@ -16,7 +16,7 @@ class Binance extends Api {
         this.#baseUrl = 'https://fapi.binance.com'
         this.#apiKey = apiKey
         this.#apiSecret = apiSecret
-        this.#recvWindow = "5000"
+        this.#recvWindow = "20000"
         this.symbolInfo = {}
     }
 

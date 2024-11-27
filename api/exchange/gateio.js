@@ -9,14 +9,12 @@ class GateIo extends Api {
     #baseUrl
     #apiKey
     #apiSecret
-    #recvWindow
 
     constructor(apiKey, apiSecret) {
         super();
         this.#baseUrl = 'https://api.gateio.ws'
         this.#apiKey = apiKey
         this.#apiSecret = apiSecret
-        this.#recvWindow = "5000"
         this.symbolInfo = {}
     }
 

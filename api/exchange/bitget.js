@@ -9,7 +9,6 @@ class Bitget extends Api {
     #baseUrl
     #apiKey
     #apiSecret
-    #recvWindow
     #passphrase
 
     constructor(apiKey, apiSecret, passphrase) {
@@ -17,7 +16,6 @@ class Bitget extends Api {
         this.#baseUrl = 'https://api.bitget.com'
         this.#apiKey = apiKey
         this.#apiSecret = apiSecret
-        this.#recvWindow = "5000"
         this.#passphrase = passphrase
         this.symbolInfo = {}
     }
