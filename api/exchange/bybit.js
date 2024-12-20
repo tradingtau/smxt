@@ -24,7 +24,7 @@ class Bybit extends Api {
 
     async initSymbolInfo() {
         const result = await this.#signAndRequest(
-            `${this.#baseUrl}/v5/market/instruments-info?category=linear`,
+            `${this.#baseUrl}/v5/market/instruments-info?category=linear&limit=1000`,
             {
                 method: 'GET',
             }
