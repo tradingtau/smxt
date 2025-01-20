@@ -102,7 +102,7 @@ class Binance extends Api {
             throw new Error(errMsg);
         }
         const data = await result.json();
-        return parseFloat(data['totalWalletBalance'])
+        return parseFloat(data['totalMarginBalance'])
     }
 
     async getPrice(symbol) {
