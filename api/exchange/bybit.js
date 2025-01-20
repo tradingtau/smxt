@@ -261,7 +261,7 @@ class Bybit extends Api {
 
     async getAllPendingOrders(settleCoin = "USDT") {
         const result = await this.#signAndRequest(
-            `${this.#baseUrl}/v5/order/realtime?category=linear&settleCoin=${settleCoin}`,
+            `${this.#baseUrl}/v5/order/realtime?category=linear&settleCoin=${settleCoin}&limit=50`,
             {
                 method: 'GET',
             }
