@@ -289,7 +289,7 @@ class Bybit extends Api {
     }
 
     async getTradeHistory(symbol = "", limit = 100) {
-        let url = `${this.#baseUrl}/v5/execution/list?category=linear&limit=${limit}`
+        let url = `${this.#baseUrl}/v5/execution/list?category=linear&limit=${limit}&execType=Trade`
         if (symbol.length > 0) {
             url += `&symbol=${symbol}`
         }
